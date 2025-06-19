@@ -4,7 +4,12 @@ import requests
 import csv
 import os
 from dotenv import load_dotenv
-load_dotenv(dotenv_path=".env", override=True)
+from pathlib import Path
+import zipfile
+import tempfile
+import re
+# Load the .env
+load_dotenv(dotenv_path=Path(__file__).parent / ".env", override=True)
 
 app = Flask(__name__)
 
@@ -13,6 +18,7 @@ app = Flask(__name__)
 IFLOW_URL = os.getenv('IFLOW_URL')
 CPI_IFLOW_URL = f"{IFLOW_URL}extractprocessmetadata" 
 CPI_EVALUATE_URL = f"{IFLOW_URL}evaluateprocessmetadata"
+PDF_GENERATE_URL = f"{IFLOW_URL}makeresultpdf"         
 
 print("Loaded CPI_IFLOW_URL:", CPI_IFLOW_URL)
 
@@ -131,29 +137,91 @@ def evaluate_process_metadata():
     if request.method == "GET":
         return render_template("evaluate_form.html")
 
-    # Option 1: File upload
+    # Step 1: Get CSV from upload or hidden input
     uploaded_file = request.files.get("csvfile")
     if uploaded_file and uploaded_file.filename:
         csv_data = uploaded_file.read().decode("utf-8", errors="replace")
-
-    # Option 2: Hidden form input from /extract
     else:
         csv_data = request.form.get("csv_data")
         if not csv_data:
             return render_template("evaluate_form.html", message="Please upload a CSV file or extract one first.")
 
-    # Send to CPI evaluate endpoint
+    # Step 2: Calculate SubProcess summary
+    def calculate_subprocess_summary(csv_text):
+        lines = csv_text.strip().split("\n")
+        component_ids = set()
+        subprocess_ids = set()
+
+        for line in lines:
+            columns = line.split(",")
+            if columns:
+                component_ids.add(columns[0].strip())
+
+            if "processcall" in line:
+                match = re.search(r"@processId:([^\s,]+)", line)
+                if match:
+                    subprocess_ids.add(match.group(1).strip())
+
+        total = len(component_ids) - 1
+        sub = len(subprocess_ids)
+        main = total - sub
+        return f"Total Processes,Main Processes,Sub-Processes\n{total},{main},{sub}"
+
+    subprocess_summary = calculate_subprocess_summary(csv_data)
+
+    # Step 3: Call CPI Evaluate Endpoint
     try:
-        response = requests.post(
-            CPI_EVALUATE_URL,
+        eval_response = requests.post(
+            CPI_EVALUATE_URL,  # built from IFLOW_URL + "evaluateprocessmetadata"
             data=csv_data,
             headers=COMMON_HEADERS,
             timeout=TIMEOUT
         )
-        result = handle_cpi_response(response)
-        return render_template("evaluate_result.html", result=result) if response.ok else render_template("evaluate_form.html", message=result)
+
+        if not eval_response.ok:
+            return render_template("evaluate_form.html", message="CPI Evaluate call failed.")
+
+        parts = re.split(r"\n\s*\n", eval_response.text.strip())
+        if len(parts) < 4:
+            return render_template("evaluate_form.html", message="Unexpected response format from CPI Evaluate.")
+
+        shape_summary = parts[0].strip()
+        category_summary = parts[1].strip()
+        main_result_csv = parts[2].strip()
+        full_eval_csv = parts[3].strip()
+
+        # Step 4: Call CPI PDF generator using PDF_GENERATE_URL from .env
+        combined_pdf_input = f"{shape_summary}\n{category_summary}\n{subprocess_summary}"
+        pdf_response = requests.post(
+            PDF_GENERATE_URL,  # built from IFLOW_URL + "makeresultpdf"
+            data=combined_pdf_input,
+            headers={
+                'Accept': 'application/pdf',
+                'Content-Type': 'text/plain',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            timeout=TIMEOUT
+        )
+
+        if not pdf_response.ok:
+            return render_template("evaluate_form.html", message="PDF generation failed.")
+
+        # Step 5: Create a ZIP file with all 3 outputs
+        temp_zip = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+        with zipfile.ZipFile(temp_zip.name, 'w') as zipf:
+            zipf.writestr("MainResult.csv", main_result_csv)
+            zipf.writestr("FullEvaluationResult.csv", full_eval_csv)
+            zipf.writestr("Result.pdf", pdf_response.content)
+
+        return send_file(
+            temp_zip.name,
+            mimetype="application/zip",
+            as_attachment=True,
+            download_name="evaluation_bundle.zip"
+        )
+
     except requests.RequestException as e:
-        return render_template("evaluate_form.html", message=f"Failed to connect to CPI iFlow: {str(e)}")
+        return render_template("evaluate_form.html", message=f"Failed to connect to CPI: {str(e)}")
 
 
 if __name__ == "__main__":
