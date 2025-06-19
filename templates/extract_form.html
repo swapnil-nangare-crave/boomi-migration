@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Extract Boomi Process Metadata{% endblock %}
+{% block content %}
+<div class="card p-4" style="min-width:340px; max-width:400px; width:100%;">
+    <h3 class="mb-4 text-center text-primary">Extract Boomi Process Metadata</h3>
+    {% if message %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endif %}
+    <form method="POST" action="/extract">
+        <div class="mb-3">
+            <label for="boomiaccountId" class="form-label">Boomi Account ID</label>
+            <input type="text" class="form-control" id="boomiaccountId" name="boomiaccountId" placeholder="Enter Boomi Account ID" required>
+        </div>
+        <div class="mb-3">
+            <label for="boomiUsername" class="form-label">Boomi Username</label>
+            <input type="text" class="form-control" id="boomiUsername" name="boomiUsername" placeholder="Enter Boomi Username" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Extract CSV</button>
+    </form>
+</div>
+{% endblock %}

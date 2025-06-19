@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Evaluation Results{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="card p-4">
+        <h4 class="mb-3 text-success">Evaluation Result</h4>
+        <pre style="white-space: pre-wrap;">{{ result }}</pre>
+        <a href="/evaluate" class="btn btn-primary mt-3">Back to Evaluate</a>
+    </div>
+</div>
+{% endblock %}
+
