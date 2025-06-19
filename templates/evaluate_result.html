@@ -3,10 +3,56 @@
 {% block content %}
 <div class="container mt-5">
     <div class="card p-4">
-        <h4 class="mb-3 text-success">Evaluation Result</h4>
-        <pre style="white-space: pre-wrap;">{{ result }}</pre>
-        <a href="/evaluate" class="btn btn-primary mt-3">Back to Evaluate</a>
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="text-success mb-0">Evaluation Results</h4>
+            <form method="POST" action="/download_zip" class="mb-0">
+                <textarea name="main_csv" style="display:none;">{{ main_result_csv }}</textarea>
+                <textarea name="full_csv" style="display:none;">{{ full_eval_csv }}</textarea>
+                <button class="btn btn-dark btn-sm">Download All</button>
+            </form>
+        </div>
+
+
+        {% if main_result %}
+        <h5 class="mb-2">Main Result</h5>
+        <form method="POST" action="{{ main_csv_url }}" class="mb-3">
+            <textarea name="csv_data" style="display: none;">{{ main_result | safe }}</textarea>
+            <button class="btn btn-outline-primary btn-sm">Download MainResult.csv</button>
+        </form>
+        <div class="table-responsive">
+            {{ main_result | safe }}
+        </div>
+        {% endif %}
+
+        <hr class="my-4">
+
+        {% if full_evaluation %}
+        <h5 class="mb-2">Full Evaluation Result</h5>
+        <form method="POST" action="{{ full_csv_url }}" class="mb-3">
+            <textarea name="csv_data" style="display: none;">{{ full_evaluation | safe }}</textarea>
+            <button class="btn btn-outline-primary btn-sm">Download FullEvaluationResult.csv</button>
+        </form>
+        <div class="table-responsive">
+            {{ full_evaluation | safe }}
+        </div>
+        {% endif %}
+
+        <hr class="my-4">
+
+        <h5>PDF Report</h5>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <a href="{{ pdf_url }}" class="btn btn-outline-danger btn-sm mb-0">Download PDF</a>
+            <a href="{{ pdf_url }}" target="_blank" class="btn btn-sm btn-secondary mb-0">Open Fullscreen</a>
+        </div>
+        <div class="border rounded shadow-sm p-2" style="height: 800px;">
+            <iframe src="{{ pdf_url }}" width="100%" height="100%" style="border: none;"></iframe>
+        </div>
+        
+        <div class="mt-3">
+            <a href="/evaluate" class="btn btn-secondary">Back to Evaluate</a>
+        </div>
+
     </div>
 </div>
 {% endblock %}
-
