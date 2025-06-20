@@ -2,12 +2,12 @@ import io
 import os
 import re
 import csv
-import tempfile
 import zipfile
 import requests
 from pathlib import Path
 from dotenv import load_dotenv
 from flask import Flask, request, render_template, send_file, jsonify
+from evaluate import run_evaluation
 
 # Load env variables
 load_dotenv(dotenv_path=Path(__file__).parent / ".env", override=True)
@@ -17,7 +17,6 @@ app = Flask(__name__)
 # CPI URLs
 IFLOW_URL = os.getenv('IFLOW_URL')
 CPI_IFLOW_URL = f"{IFLOW_URL}extractprocessmetadata"
-CPI_EVALUATE_URL = f"{IFLOW_URL}evaluateprocessmetadata"
 PDF_GENERATE_URL = f"{IFLOW_URL}makeresultpdf"
 
 COMMON_HEADERS = {
@@ -27,6 +26,10 @@ COMMON_HEADERS = {
 }
 
 TIMEOUT = 60
+
+_pdf_cache = None
+_main_csv_cache = None
+_full_csv_cache = None
 
 # -------------------------------------
 # Utilities
@@ -134,6 +137,8 @@ def extract_process_metadata():
 
 @app.route("/evaluate", methods=["GET", "POST"])
 def evaluate_process_metadata():
+    global _pdf_cache, _main_csv_cache, _full_csv_cache
+
     if request.method == "GET":
         return render_template("evaluate_form.html")
 
@@ -141,48 +146,25 @@ def evaluate_process_metadata():
     csv_data = uploaded_file.read().decode("utf-8") if uploaded_file else request.form.get("csv_data")
 
     if not csv_data:
-        return render_template("evaluate_form.html", message="Please upload or extract a CSV file.")
+        return render_template("evaluate_form.html", message="Please upload or paste a CSV file.")
 
     try:
-        # Subprocess Summary
-        subprocess_summary = calculate_subprocess_summary(csv_data)
+        # Run full evaluation locally
+        full_eval_file, main_result_file, pdf_file = run_evaluation(csv_data)
 
-        # Evaluate Endpoint
-        eval_response = requests.post(
-            CPI_EVALUATE_URL,
-            data=csv_data,
-            headers=COMMON_HEADERS,
-            timeout=TIMEOUT
-        )
+        # Read contents back for rendering and caching
+        with open(full_eval_file, 'r', encoding='utf-8') as f:
+            full_eval_csv = f.read()
 
-        if not eval_response.ok:
-            return render_template("evaluate_form.html", message="CPI Evaluate call failed.")
+        with open(main_result_file, 'r', encoding='utf-8') as f:
+            main_result_csv = f.read()
 
-        parts = re.split(r"\n\s*\n", eval_response.text.strip())
-        if len(parts) < 4:
-            return render_template("evaluate_form.html", message="Unexpected evaluation format.")
+        with open(pdf_file, 'rb') as f:
+            _pdf_cache = f.read()
 
-        shape_summary = parts[0].strip()
-        category_summary = parts[1].strip()
-        main_result_csv = parts[2].strip()
-        full_eval_csv = parts[3].strip()
-
-        # Generate PDF
-        combined_pdf_input = f"{shape_summary}\n{category_summary}\n{subprocess_summary}"
-        pdf_response = requests.post(
-            PDF_GENERATE_URL,
-            data=combined_pdf_input,
-            headers=COMMON_HEADERS,
-            timeout=TIMEOUT
-        )
-
-        if not pdf_response.ok:
-            return render_template("evaluate_form.html", message="PDF generation failed.")
-
-        # Save PDF content in a temp location or pass in memory
-        global _pdf_cache
-        _pdf_cache = pdf_response.content  # For use in download_pdf()
-
+        _main_csv_cache = main_result_csv
+        _full_csv_cache = full_eval_csv
+    
         return render_template(
             "evaluate_result.html",
             main_result=csv_to_html_table(main_result_csv),
@@ -194,31 +176,31 @@ def evaluate_process_metadata():
             full_csv_url="/download/full"
         )
 
-    except requests.RequestException as e:
-        return render_template("evaluate_form.html", message=f"Connection failed: {str(e)}")
+    except Exception as e:
+        return render_template("evaluate_form.html", message=f"Evaluation failed: {str(e)}")
 
 
-@app.route("/download_main", methods=["POST"])
-def download_main():
-    csv_data = request.form['csv_data']
-    return send_file(
-        io.BytesIO(csv_data.encode('utf-8')),
-        mimetype='text/csv',
-        as_attachment=True,
-        download_name='MainResult.csv'
-    )
+@app.route("/download/main")
+def download_main_csv():
+    if _main_csv_cache:
+        return send_file(
+            io.BytesIO(_main_csv_cache.encode('utf-8')),
+            mimetype="text/csv",
+            as_attachment=True,
+            download_name="mainResult.csv"
+        )
+    return "Main CSV not available", 404
 
-
-@app.route("/download_full", methods=["POST"])
-def download_full():
-    csv_data = request.form['csv_data']
-    return send_file(
-        io.BytesIO(csv_data.encode('utf-8')),
-        mimetype='text/csv',
-        as_attachment=True,
-        download_name='FullEvaluationResult.csv'
-    )
-
+@app.route("/download/full")
+def download_full_csv():
+    if _full_csv_cache:
+        return send_file(
+            io.BytesIO(_full_csv_cache.encode('utf-8')),
+            mimetype="text/csv",
+            as_attachment=True,
+            download_name="fullEvaluation.csv"
+        )
+    return "Full Evaluation CSV not available", 404
 
 @app.route("/download/pdf")
 def download_pdf():

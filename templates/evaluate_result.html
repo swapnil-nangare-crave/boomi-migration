@@ -16,12 +16,11 @@
 
         {% if main_result %}
         <h5 class="mb-2">Main Result</h5>
-        <form method="POST" action="{{ main_csv_url }}" class="mb-3">
-            <textarea name="csv_data" style="display: none;">{{ main_result | safe }}</textarea>
-            <button class="btn btn-outline-primary btn-sm">Download MainResult.csv</button>
-        </form>
-        <div class="table-responsive">
-            {{ main_result | safe }}
+        <div class="justify-content-between">
+            <a href="{{ main_csv_url }}" class="btn btn-outline-primary btn-sm mb-3">Download MainResult.csv</a>
+            <div class="table-responsive">
+                {{ main_result | safe }}
+            </div>
         </div>
         {% endif %}
 
@@ -29,12 +28,11 @@
 
         {% if full_evaluation %}
         <h5 class="mb-2">Full Evaluation Result</h5>
-        <form method="POST" action="{{ full_csv_url }}" class="mb-3">
-            <textarea name="csv_data" style="display: none;">{{ full_evaluation | safe }}</textarea>
-            <button class="btn btn-outline-primary btn-sm">Download FullEvaluationResult.csv</button>
-        </form>
-        <div class="table-responsive">
-            {{ full_evaluation | safe }}
+        <div class="justify-content-between">
+            <a href="{{ full_csv_url }}" class="btn btn-outline-primary btn-sm mb-2">Download FullEvaluationResult.csv</a>
+            <div class="table-responsive">
+                {{ full_evaluation | safe }}
+            </div>
         </div>
         {% endif %}
 
