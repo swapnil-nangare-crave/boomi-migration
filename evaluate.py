@@ -313,12 +313,12 @@ def build_pdf(filename, shape_data, category_data, sub_process):
 
     # Introduction and Assessment
     elements.append(Paragraph("<b>Introduction</b>", styles['Heading2']))
-    elements.append(Paragraph("By introducing the SAP Business Technology Platform (BTP), the integration topic has moved to a new stage. ...", styles['Normal']))
+    elements.append(Paragraph("By introducing the SAP Business Technology Platform (BTP), the integration topic has moved to a new stage. Certainly, there is an infrastructure change running cloud-based services and solutions. This means that administration and operational tasks may differ. The innovative technology also impacts the SAP Integration Suite design and runtime. Nested as a service on SAP BTP, SAP Integration Suite runs in SAP BTP, Cloud Foundry environment. This foundation is an open-source platform as a service (PaaS). It is designed to be configured, deployed, managed, scaled, and upgraded on any cloud Infrastructure as a Service (IaaS) provider. Please be aware of what features the Cloud Foundry environment on SAP BTP supports and doesn't support. However, the intention of SAP Integration Suite is to connect and automate processes and data efficiently across the heterogeneous IT landscape and business network by providing comprehensive integration capabilities and best practices to accelerate and modernize integration.", styles['Normal']))
     elements.append(Paragraph("<b>Migration Assessment</b>", styles['Heading2']))
     elements.append(Paragraph("<b>Assessment Categories</b>", styles['Heading3']))
-    elements.append(Paragraph("<font color='green'><b>• Ready to migrate:</b></font> These Boomi processes match to the SAP Integration Suite. ...", styles['Normal']))
-    elements.append(Paragraph("<font color='blue'><b>• Adjustment required:</b></font> These Boomi processes partially match ...", styles['Normal']))
-    elements.append(Paragraph("<font color='red'><b>• Evaluation required:</b></font> For these Boomi processes, some items require further evaluation ...", styles['Normal']))
+    elements.append(Paragraph("<font color='green'><b>• Ready to migrate:</b></font> These Boomi processes match to the SAP Integration Suite. They can be moved manually to the SAP Integration Suite. The move might include additional steps within SAP Integration Suite to configure this scenario properly.", styles['Normal']))
+    elements.append(Paragraph("<font color='blue'><b>• Adjustment required:</b></font> These Boomi processes partially match to the scenarios offered in SAP Integration Suite. They can be moved to SAP Integration Suite manually. Further adjustments to the end-to-end integration process based on best practices are required.", styles['Normal']))
+    elements.append(Paragraph("<font color='red'><b>• Evaluation required:</b></font> For these Boomi processes, some items require further evaluation before the scenario can be moved to SAP Integration Suite.", styles['Normal']))
     elements.append(Spacer(1, 12))
 
     # Scenario Categorization Summary Table

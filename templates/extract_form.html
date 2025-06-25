@@ -1,24 +1,71 @@
 {% extends "base.html" %}
 {% block title %}Extract Boomi Process Metadata{% endblock %}
 {% block content %}
+
 <div class="card p-4" style="min-width:340px; max-width:400px; width:100%;">
     <h3 class="mb-4 text-center text-primary">Extract Boomi Process Metadata</h3>
+
     {% if message %}
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     {% endif %}
-    <form method="POST" action="/extract">
+
+    <form method="POST" action="/extract" id="extractForm">
         <div class="mb-3">
             <label for="boomiaccountId" class="form-label">Boomi Account ID</label>
-            <input type="text" class="form-control" id="boomiaccountId" name="boomiaccountId" placeholder="Enter Boomi Account ID" required>
+            <input type="text" class="form-control" id="boomiaccountId" name="boomiaccountId" required value="{{ request.form.boomiaccountId or '' }}">
         </div>
         <div class="mb-3">
             <label for="boomiUsername" class="form-label">Boomi Username</label>
-            <input type="text" class="form-control" id="boomiUsername" name="boomiUsername" placeholder="Enter Boomi Username" required>
+            <input type="text" class="form-control" id="boomiUsername" name="boomiUsername" required value="{{ request.form.boomiUsername or '' }}">
         </div>
+        <div class="mb-3">
+            <label for="boomiPassword" class="form-label">Boomi Password</label>
+            <input type="password" class="form-control" id="boomiPassword" name="boomiPassword" required value="{{ request.form.boomiPassword or '' }}">
+        </div>
+
+        <!-- ONE button only -->
         <button type="submit" class="btn btn-primary w-100">Extract CSV</button>
     </form>
 </div>
+
+{% if processes %}
+<!-- Process Selection Modal -->
+<div class="modal fade show" id="processModal" tabindex="-1" aria-modal="true" style="display: block;" role="dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select Processes to Export</h5>
+            </div>
+            <div class="modal-body">
+                <!-- Select All Checkbox -->
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="selectAllCheckbox" onclick="toggleAllProcesses(this)">
+                    <label class="form-check-label fw-bold" for="selectAllCheckbox">Select All</label>
+                </div>
+
+                <!-- Individual Process Checkboxes -->
+                {% for name, pid in processes.items() %}
+                    <div class="form-check">
+                        <input class="form-check-input process-checkbox" type="checkbox" name="selected_processes" value="{{ pid }}" id="process{{ loop.index }}" form="extractForm">
+                        <label class="form-check-label" for="process{{ loop.index }}">{{ name }}</label>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary" form="extractForm">Confirm Selection</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-backdrop fade show"></div>
+<script>
+function toggleAllProcesses(source) {
+    const checkboxes = document.querySelectorAll('.process-checkbox');
+    checkboxes.forEach(cb => cb.checked = source.checked);
+}
+</script>
+{% endif %}
 {% endblock %}

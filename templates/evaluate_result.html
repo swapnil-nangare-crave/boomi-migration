@@ -16,20 +16,35 @@
 
         {% if main_result %}
         <h5 class="mb-2">Main Result</h5>
-        <div class="justify-content-between">
-            <a href="{{ main_csv_url }}" class="btn btn-outline-primary btn-sm mb-3">Download MainResult.csv</a>
+
+        <div class="d-flex justify-content-between mb-2">
+            <a href="{{ main_csv_url }}" class="btn btn-outline-primary btn-sm">Download MainResult.csv</a>
+            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#mainResultTable" aria-expanded="false" aria-controls="mainResultTable">
+                Toggle Result
+            </button>
+        </div>
+
+        <div class="collapse show" id="mainResultTable">
             <div class="table-responsive">
                 {{ main_result | safe }}
             </div>
         </div>
         {% endif %}
 
+
         <hr class="my-4">
 
         {% if full_evaluation %}
         <h5 class="mb-2">Full Evaluation Result</h5>
-        <div class="justify-content-between">
-            <a href="{{ full_csv_url }}" class="btn btn-outline-primary btn-sm mb-2">Download FullEvaluationResult.csv</a>
+        
+        <div class="d-flex justify-content-between mb-2">
+            <a href="{{ full_csv_url }}" class="btn btn-outline-primary btn-sm">Download FullEvaluationResult.csv</a>
+             <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#FullEvaluationResult" aria-expanded="false" aria-controls="mainResultTable">
+                Toggle Result
+            </button>
+        </div>
+
+        <div class="collapse show" id="FullEvaluationResult">
             <div class="table-responsive">
                 {{ full_evaluation | safe }}
             </div>
