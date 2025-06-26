@@ -4,28 +4,10 @@ import re
 import csv
 import zipfile
 import requests
-from pathlib import Path
-from dotenv import load_dotenv
-from flask import Flask, request, render_template, send_file, jsonify
+from flask import Flask, render_template, send_file, jsonify, request
 from evaluate import run_evaluation
 
-# Load env variables
-load_dotenv(dotenv_path=Path(__file__).parent / ".env", override=True)
-
 app = Flask(__name__)
-
-# CPI URLs
-IFLOW_URL = os.getenv('IFLOW_URL')
-CPI_IFLOW_URL = f"{IFLOW_URL}extractprocessmetadata"
-PDF_GENERATE_URL = f"{IFLOW_URL}makeresultpdf"
-
-COMMON_HEADERS = {
-    'Accept': 'text/plain',
-    'Content-Type': 'text/plain',
-    'X-Requested-With': 'XMLHttpRequest'
-}
-
-TIMEOUT = 60
 
 _pdf_cache = None
 _main_csv_cache = None
@@ -106,15 +88,13 @@ def help():
     return render_template("help.html")
 
 
-from flask import Flask, request, render_template
 from extract import (
-    csv_to_html_table,
     get_all_processes,
     extract_process_name_id,
-    export_process_and_return_xml,
-    parse_process_xml_to_metadata
+    get_all_data
 )
 
+# Extract Function
 @app.route("/extract", methods=["GET", "POST"])
 def extract_process_metadata():
     if request.method == "GET":
@@ -126,7 +106,6 @@ def extract_process_metadata():
     selected_processes = request.form.getlist("selected_processes")
 
     if not selected_processes:
-        # First POST: show process list in modal
         raw_response = get_all_processes(username, password, id=acc_id)
         if not raw_response:
             return render_template("extract_form.html", message="Failed to retrieve processes.")
@@ -134,26 +113,8 @@ def extract_process_metadata():
         process_dict = extract_process_name_id(raw_response)
         return render_template("extract_form.html", processes=process_dict)
 
-    print("-"*40)
-    # 2nd POST: Process(es) selected, do export and parse
-    # Generate CSV content from all selected processes
-    all_csv_parts = []
-    for pid in selected_processes:
-        xml_data = export_process_and_return_xml(pid, username, password, acc_id)
-        if xml_data:
-            csv_string = parse_process_xml_to_metadata(xml_data)
-            csv_lines = csv_string.splitlines()  # Safer than split('\n')
-            all_csv_parts.append(csv_lines[1:])  # Skip only the first line (header) # Skip header
-
-    # Combine all rows under one header
-    final_csv = io.StringIO()
-    writer = csv.writer(final_csv)
-    writer.writerow(["ComponentId", "ProcessName", "ShapeName", "ShapeType", "Configuration"])
-    for part in all_csv_parts:
-        for line in part:
-            writer.writerow(line.split(','))
-
-    csv_text = final_csv.getvalue()
+    
+    csv_text = get_all_data(username, password, acc_id, selected_processes)
     try:
         if csv_text:
             table_html = csv_to_html_table(csv_text)
@@ -164,38 +125,7 @@ def extract_process_metadata():
     except requests.RequestException as e:
         return jsonify({'error': f'Connection failed: {str(e)}'}), 502
 
-
-
-# @app.route("/extract", methods=["GET", "POST"])
-# def extract_process_metadata():
-#     if request.method == "GET":
-#         return render_template("extract_form.html")
-
-#     boomiaccountId = request.form.get('boomiaccountId')
-#     boomiUsername = request.form.get('boomiUsername')
-
-#     if not boomiaccountId or not boomiUsername:
-#         return jsonify({'error': 'Missing Boomi Account ID or Username'}), 400
-
-#     try:
-#         response = requests.get(
-#             CPI_IFLOW_URL,
-#             params={'boomiaccountId': boomiaccountId, 'boomiUsername': boomiUsername},
-#             headers=COMMON_HEADERS,
-#             timeout=TIMEOUT
-#         )
-
-#         if response.ok:
-#             csv_text = response.content.decode('utf-8', errors='replace')
-#             table_html = csv_to_html_table(csv_text)
-#             return render_template("extract_result.html", table=table_html, csv_data=csv_text)
-#         else:
-#             return render_template("extract_form.html", message=response.text)
-
-#     except requests.RequestException as e:
-#         return jsonify({'error': f'Connection failed: {str(e)}'}), 502
-
-
+# Evaluate Function
 @app.route("/evaluate", methods=["GET", "POST"])
 def evaluate_process_metadata():
     global _pdf_cache, _main_csv_cache, _full_csv_cache
