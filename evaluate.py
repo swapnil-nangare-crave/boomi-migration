@@ -383,7 +383,7 @@ def build_pdf(filename, shape_data, category_data, sub_process):
 def run_evaluation(csv_input):
     # Step 2: Categorize processes
     fullEvaluation = categorizeProcesses(csv_input)
-    with open("fullEvaluation.csv", mode='w', encoding='utf-8') as f:
+    with open("fullEvaluation.csv", mode='w', encoding='utf-8', newline='') as f:
         f.write(fullEvaluation)
 
     # Step 3: Group by process
