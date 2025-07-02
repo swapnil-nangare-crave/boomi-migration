@@ -171,6 +171,38 @@ def evaluate_process_metadata():
         return render_template("evaluate_form.html", message=f"Evaluation failed: {str(e)}")
 
 
+# Migration Function
+@app.route("/migrate", methods=["GET", "POST"])
+def migrate_processes():
+    if request.method == "GET":
+        return render_template("migration.html")
+
+    acc_id = request.form.get("boomiaccountId")
+    username = request.form.get("boomiUsername")
+    password = request.form.get("boomiPassword")
+    selected_processes = request.form.getlist("selected_processes")
+
+    if not selected_processes:
+        raw_response = get_all_processes(username, password, id=acc_id)
+        if not raw_response:
+            return render_template("migration.html", message="Failed to retrieve processes.")
+
+        process_dict = extract_process_name_id(raw_response)
+        return render_template("migration.html", processes=process_dict)
+
+    
+    csv_text = get_all_data(username, password, acc_id, selected_processes)
+    try:
+        if csv_text:
+            table_html = csv_to_html_table(csv_text)
+            return render_template("migration.html", table=table_html, csv_data=csv_text)
+        else:
+            return render_template("migration.html", message=csv_text.text)
+
+    except requests.RequestException as e:
+        return jsonify({'error': f'Connection failed: {str(e)}'}), 502
+
+
 @app.route("/download/main")
 def download_main_csv():
     if _main_csv_cache:
