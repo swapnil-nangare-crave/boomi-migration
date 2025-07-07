@@ -1,11 +1,12 @@
 import io
-import os
 import re
 import csv
 import zipfile
 import requests
 from flask import Flask, render_template, send_file, jsonify, request
+
 from evaluate import run_evaluation
+from extract import get_all_processes, extract_process_name_id, get_all_data
 
 app = Flask(__name__)
 
@@ -87,13 +88,6 @@ def home():
 def help():
     return render_template("help.html")
 
-
-from extract import (
-    get_all_processes,
-    extract_process_name_id,
-    get_all_data
-)
-
 # Extract Function
 @app.route("/extract", methods=["GET", "POST"])
 def extract_process_metadata():
@@ -172,6 +166,12 @@ def evaluate_process_metadata():
 
 
 # Migration Function
+
+# import secrets
+# app.secret_key = secrets.token_hex(16)
+# from migration import migration_bp  # adjust import if needed
+# app.register_blueprint(migration_bp)
+
 @app.route("/migrate", methods=["GET", "POST"])
 def migrate_processes():
     if request.method == "GET":

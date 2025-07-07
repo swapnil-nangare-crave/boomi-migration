@@ -383,12 +383,12 @@ def build_pdf(filename, shape_data, category_data, sub_process):
 def run_evaluation(csv_input):
     # Step 2: Categorize processes
     fullEvaluation = categorizeProcesses(csv_input)
-    with open("Output/fullEvaluation.csv", mode='w', encoding='utf-8', newline='') as f:
+    with open("fullEvaluation.csv", mode='w', encoding='utf-8', newline='') as f:
         f.write(fullEvaluation)
 
     # Step 3: Group by process
     mainResult = evaluateProcesses(fullEvaluation)
-    with open("Output/mainResult.csv", mode='w', encoding='utf-8') as f:
+    with open("mainResult.csv", mode='w', encoding='utf-8') as f:
         f.write(mainResult)
 
     # Step 4: Count shapes
@@ -401,7 +401,7 @@ def run_evaluation(csv_input):
     sub_process = calculate_subprocess_summary(csv_input)
 
     # Step 7: Generate PDF report
-    pdf_filename = "Output/Migration_Assessment_Report.pdf"
+    pdf_filename = "Migration_Assessment_Report.pdf"
     build_pdf(pdf_filename, shape_data, category_data, sub_process)
 
     return "fullEvaluation.csv", "mainResult.csv", pdf_filename
