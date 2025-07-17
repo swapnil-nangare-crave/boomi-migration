@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Extract Boomi Process Metadata{% endblock %}
 {% block content %}
+<style>.navbar-brand { color: #0d6efd !important; }</style>
 
 <div class="card p-4" style="min-width:340px; max-width:400px; width:100%;">
     <h3 class="mb-4 text-center text-primary">Extract Boomi Process Metadata</h3>
@@ -15,15 +16,15 @@
     <form method="POST" action="/extract" id="extractForm">
         <div class="mb-3">
             <label for="boomiaccountId" class="form-label">Boomi Account ID</label>
-            <input type="text" class="form-control" id="boomiaccountId" name="boomiaccountId" required value="{{ request.form.boomiaccountId or '' }}">
+            <input type="text" class="form-control" id="boomiaccountId" name="boomiaccountId" placeholder="company-xxxx" value="{{ request.form.boomiaccountId or '' }}">
         </div>
         <div class="mb-3">
             <label for="boomiUsername" class="form-label">Boomi Username</label>
-            <input type="text" class="form-control" id="boomiUsername" name="boomiUsername" required value="{{ request.form.boomiUsername or '' }}">
+            <input type="text" class="form-control" id="boomiUsername" name="boomiUsername" placeholder="email-id" required value="{{ request.form.boomiUsername or '' }}">
         </div>
         <div class="mb-3">
             <label for="boomiPassword" class="form-label">Boomi Password</label>
-            <input type="password" class="form-control" id="boomiPassword" name="boomiPassword" required value="{{ request.form.boomiPassword or '' }}">
+            <input type="password" class="form-control" id="boomiPassword" name="boomiPassword" placeholder="xxxxxxxx" required value="{{ request.form.boomiPassword or '' }}">
         </div>
 
         <!-- ONE button only -->

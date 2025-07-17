@@ -171,7 +171,7 @@ def evaluate_process_metadata():
 # app.secret_key = secrets.token_hex(16)
 # from migration import migration_bp  # adjust import if needed
 # app.register_blueprint(migration_bp)
-
+import migration as migration
 @app.route("/migrate", methods=["GET", "POST"])
 def migrate_processes():
     if request.method == "GET":
@@ -183,15 +183,15 @@ def migrate_processes():
     selected_processes = request.form.getlist("selected_processes")
 
     if not selected_processes:
-        raw_response = get_all_processes(username, password, id=acc_id)
+        raw_response = get_all_processes(username, password, acc_id)
         if not raw_response:
             return render_template("migration.html", message="Failed to retrieve processes.")
 
         process_dict = extract_process_name_id(raw_response)
         return render_template("migration.html", processes=process_dict)
 
-    
-    csv_text = get_all_data(username, password, acc_id, selected_processes)
+
+    csv_text = migration.get_all_data(username, password, acc_id, selected_processes)
     try:
         if csv_text:
             table_html = csv_to_html_table(csv_text)
