@@ -104,10 +104,10 @@ def build_csv_from_json(json_data):
     return output.getvalue()
 
 # Get all data and convert it to csv file and return to main program
-def get_all_data(username, password, accound_id, selected_processes):
+def get_all_data(username, password, account_id, selected_processes):
     all_csv_parts = []
     for process_id in selected_processes:
-        xml_data = get_xml_from_boomi(process_id, username, password, accound_id)
+        xml_data = get_xml_from_boomi(process_id, username, password, account_id)
         if xml_data:
             csv_string = parse_process_xml_to_metadata(xml_data)
             csv_lines = csv_string.splitlines()  # Safer than split('\n')

@@ -177,30 +177,61 @@ def migrate_processes():
     if request.method == "GET":
         return render_template("migration.html")
 
-    acc_id = request.form.get("boomiaccountId")
-    username = request.form.get("boomiUsername")
-    password = request.form.get("boomiPassword")
+    # Step 1: Get form fields
+    acc_id = request.form.get("boomiaccountId", "").strip()
+    username = request.form.get("boomiUsername", "").strip()
+    password = request.form.get("boomiPassword", "").strip()
     selected_processes = request.form.getlist("selected_processes")
 
+    # Store common credentials in context
+    common_context = {
+        "boomiaccountId": acc_id,
+        "boomiUsername": username,
+        "boomiPassword": password
+    }
+
+    # Step 2: If processes are not selected, fetch process list
     if not selected_processes:
         raw_response = get_all_processes(username, password, acc_id)
         if not raw_response:
-            return render_template("migration.html", message="Failed to retrieve processes.")
+            return render_template(
+                "migration.html",
+                message="Failed to retrieve processes. Check your credentials.",
+                **common_context
+            )
 
-        process_dict = extract_process_name_id(raw_response)
-        return render_template("migration.html", processes=process_dict)
+        process_dict = extract_process_name_id(raw_response)  # Should return List[Dict]
+        return render_template(
+            "migration.html",
+            processes=process_dict,
+            message="Processes fetched successfully.",
+            **common_context
+        )
 
-
-    csv_text = migration.get_all_data(username, password, acc_id, selected_processes)
+    # Step 3: If processes are selected, generate preview
     try:
-        if csv_text:
-            table_html = csv_to_html_table(csv_text)
-            return render_template("migration.html", table=table_html, csv_data=csv_text)
-        else:
-            return render_template("migration.html", message=csv_text.text)
+        csv_text = migration.get_all_data(username, password, acc_id, selected_processes)
+
+        if not csv_text:
+            return render_template(
+                "migration.html",
+                message="No data returned for the selected processes.",
+                **common_context
+            )
+
+        table_html = csv_to_html_table(csv_text)
+        return render_template(
+            "migration.html",
+            table=table_html,
+            csv_data=csv_text,
+            selected_processes=selected_processes,
+            message="Migration Preview generated.",
+            **common_context
+        )
 
     except requests.RequestException as e:
         return jsonify({'error': f'Connection failed: {str(e)}'}), 502
+
 
 
 @app.route("/download/main")

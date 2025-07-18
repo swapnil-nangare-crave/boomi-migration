@@ -1,54 +1,104 @@
 {% extends "base.html" %}
 {% block title %}Migrate Boomi Processes{% endblock %}
 {% block content %}
-<style>.navbar-brand { color: #777 !important; }</style>
 
-<div class="card p-4" style="min-width:340px; max-width:400px; width:100%;">
-    <h3 class="mb-4 text-center text-secondary">Migrate Processes</h3>
+<style>.navbar-brand { color: #6c757d !important; }</style>
 
-    {% if message %}
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<!-- 🔹 Step 1: Credential Form - Always Visible -->
+<div class="card p-4" style="min-width:340px; max-width:400px; width:100%; margin:auto;">
+  <h3 class="mb-4 text-center text-secondary">Migrate Processes</h3>
+
+  {% if message %}
+    <div class="alert alert-dismissible fade show {% if 'Failed' in message %}alert-danger{% else %}alert-info{% endif %}" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  {% endif %}
+
+  <form method="POST" action="/migrate" id="migrateForm">
+    <div class="mb-3">
+      <label for="boomiaccountId" class="form-label">Boomi Account ID</label>
+      <input type="text" class="form-control" id="boomiaccountId" name="boomiaccountId" required value="{{ request.form.boomiaccountId or '' }}">
+    </div>
+    <div class="mb-3">
+      <label for="boomiUsername" class="form-label">Boomi Username</label>
+      <input type="text" class="form-control" id="boomiUsername" name="boomiUsername" required value="{{ request.form.boomiUsername or '' }}">
+    </div>
+    <div class="mb-3">
+      <label for="boomiPassword" class="form-label">Boomi Password</label>
+      <input type="password" class="form-control" id="boomiPassword" name="boomiPassword" required value="{{ request.form.boomiPassword or '' }}">
+    </div>
+
+    <button type="submit" class="btn btn-secondary w-100">Fetch all Processes</button>
+  </form>
+</div>
+
+<!-- 🔹 Step 2 & 3: Process Selection and Result - Modal Content -->
+<div class="modal fade" id="processModal" tabindex="-1" aria-labelledby="processModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="processModalLabel">Migrate Boomi Processes</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Step 2: Process Selection -->
+        {% if processes %}
+        <form method="POST" action="/migrate">
+          <!-- Hidden credentials -->
+          <input type="hidden" name="boomiaccountId" value="{{ request.form.boomiaccountId }}">
+          <input type="hidden" name="boomiUsername" value="{{ request.form.boomiUsername }}">
+          <input type="hidden" name="boomiPassword" value="{{ request.form.boomiPassword }}">
+
+          <label class="form-label">Select Processes to Migrate ({{ processes|length }}):</label>
+          <div class="mb-3" style="max-height: 220px; overflow-y: auto;">
+            {% for name, pid in processes.items() %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="selected_processes" value="{{ pid }}" id="process{{ loop.index }}">
+                <label class="form-check-label" for="process{{ loop.index }}">{{ name }}</label>
+              </div>
+            {% endfor %}
+          </div>
+
+          <button type="submit" class="btn btn-success w-100 mt-2">Run Migration</button>
+        </form>
+        {% endif %}
+
+        <!-- Step 3: Show Migration Result -->
+        {% if table %}
+        <hr class="my-4">
+        <h5 class="text-success">Shapes Used</h5>
+        <div class="table-responsive mt-2">
+          {{ table | safe }}
         </div>
-    {% endif %}
 
-    <!-- Step 1: Credential Form -->
-    <form method="POST" action="/migrate" id="migrateForm">
-        <div class="mb-3">
-            <label for="boomiaccountId" class="form-label">Boomi Account ID</label>
-            <input type="text" class="form-control" id="boomiaccountId" name="boomiaccountId" placeholder="company-xxxx" required value="{{ request.form.boomiaccountId or '' }}">
+        <!-- Modal Footer Buttons -->
+        <div class="modal-footer justify-content-between">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+
+            {% if table %}
+            <form method="POST" action="/next_step">
+                <input type="hidden" name="csv_data" value="{{ csv_data }}">
+                <button type="submit" class="btn btn-primary">Next</button>
+            </form>
+            {% endif %}
         </div>
-        <div class="mb-3">
-            <label for="boomiUsername" class="form-label">Boomi Username</label>
-            <input type="text" class="form-control" id="boomiUsername" name="boomiUsername" placeholder="email-id" required value="{{ request.form.boomiUsername or '' }}">
-        </div>
-        <div class="mb-3">
-            <label for="boomiPassword" class="form-label">Boomi Password</label>
-            <input type="password" class="form-control" id="boomiPassword" name="boomiPassword" placeholder="xxxxxxxx" required value="{{ request.form.boomiPassword or '' }}">
-        </div>
+        
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
 
-        <button type="submit" class="btn btn-secondary w-100">Fetch all Processes</button>
-    </form>
+<!-- 🔹 Auto-open Modal if Data is Present -->
+{% if processes or table %}
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var modal = new bootstrap.Modal(document.getElementById('processModal'));
+    modal.show();
+  });
+</script>
+{% endif %}
 
-    <!-- Step 2: Process Selection Form -->
-    {% if processes %}
-    <form method="POST" action="/migrate" class="mt-4">
-        <!-- Hidden credentials -->
-        <input type="hidden" name="boomiaccountId" value="{{ request.form.boomiaccountId }}">
-        <input type="hidden" name="boomiUsername" value="{{ request.form.boomiUsername }}">
-        <input type="hidden" name="boomiPassword" value="{{ request.form.boomiPassword }}">
-
-        <label>Select Processes to Migrate:</label><br>
-        {% for pid, name in processes.items() %}
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="selected_processes" value="{{ pid }}" id="{{ pid }}">
-                <label class="form-check-label" for="{{ pid }}">{{ name }}</label>
-            </div>
-        {% endfor %}
-
-        <button type="submit" class="btn btn-success mt-3">Run Migration</button>
-    </form>
-    {% endif %}
-
-{%endblock%}
+{% endblock %}
