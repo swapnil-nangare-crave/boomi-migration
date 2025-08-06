@@ -1,0 +1,85 @@
+<h3 class="mb-4 text-center text-secondary">Migrate Processes</h3>
+
+{% if message %}
+  <div class="alert alert-dismissible fade show {% if 'Failed' in message %}alert-danger{% else %}alert-info{% endif %}">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+{% endif %}
+
+<!-- Step 1: Credential Form -->
+{% if not processes and not table %}
+<form method="POST" action="/migrate" id="migrateForm">
+  <div class="mb-3">
+    <label for="boomiaccountId" class="form-label">Boomi Account ID</label>
+    <input
+      type="text"
+      class="form-control"
+      id="boomiaccountId"
+      name="boomiaccountId"
+      placeholder="company-xxxx"
+      required
+      value="{{ boomiaccountId or '' }}">
+  </div>
+  <div class="mb-3">
+    <label for="boomiUsername" class="form-label">Boomi Username</label>
+    <input
+      type="text"
+      class="form-control"
+      id="boomiUsername"
+      name="boomiUsername"
+      placeholder="your@email.com"
+      required
+      value="{{ boomiUsername or '' }}">
+  </div>
+  <div class="mb-3">
+    <label for="boomiPassword" class="form-label">Boomi Password</label>
+    <input
+      type="password"
+      class="form-control"
+      id="boomiPassword"
+      name="boomiPassword"
+      placeholder="********"
+      required>
+  </div>
+  <button type="submit" class="btn btn-secondary w-100">Fetch All Processes</button>
+</form>
+{% endif %}
+
+<!-- Step 2: Process Selection Form -->
+{% if processes %}
+<form method="POST" action="/migrate" class="mt-4">
+  <input type="hidden" name="boomiaccountId" value="{{ boomiaccountId }}">
+  <input type="hidden" name="boomiUsername" value="{{ boomiUsername }}">
+  <input type="hidden" name="boomiPassword" value="{{ boomiPassword }}">
+
+  <label class="form-label">Select Processes to Migrate ({{ processes|length }}):</label>
+  <div class="mb-3" style="max-height: 220px; overflow-y: auto;">
+    {% for name, pid in processes.items() %}
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          name="selected_processes"
+          value="{{ pid }}"
+          id="process{{ loop.index }}">
+        <label class="form-check-label" for="process{{ loop.index }}">{{ name }}</label>
+      </div>
+    {% endfor %}
+  </div>
+  <button type="submit" class="btn btn-success w-100 mt-2">Run Migration</button>
+</form>
+{% endif %}
+
+<!-- Step 3: Migration Preview -->
+{% if table %}
+<hr class="my-4">
+<h5 class="text-success">Migration Preview</h5>
+<div class="table-responsive mt-2">
+  {{ table | safe }}
+</div>
+<form method="POST" action="/download_csv">
+  <input type="hidden" name="csv_data" value="{{ csv_data }}">
+  <button class="btn btn-outline-primary mt-3">Download CSV</button>
+</form>
+{% endif %}
